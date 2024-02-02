@@ -1,15 +1,16 @@
 #include "tem_hum.h"
-#include <Arduino.h>
-#include <WiFi.h>
-#include "PubSubClient.h"
 
 #define NTP "ntp.aliyun.com"
 
 // 创建对象
-DHT20 DHT;
+DHT20 DHT;          // 温湿度
+Adafruit_SGP30 sgp; // 二氧化碳 TVOC
 unsigned long lastMs = 0;
 float tep;
 float hum;
+
+float TVOC;
+float CO2;
 
 /* 连接WIFI SSID和密码 */
 #define WIFI_SSID "Come on Baby"
@@ -27,17 +28,17 @@ float hum;
 #define MQTT_USRNAME DEVICE_NAME "&" PRODUCT_KEY
 
 // 修改用户id 和 MQTT密码
-#define CLIENT_ID "a1ja2NU3asy.testV1|securemode=2,signmethod=hmacsha256,timestamp=1702812641612|"
-#define MQTT_PASSWD "759a092ae23e421672e25d994fcfbc64bdf73c8fb430bbbcf4abc4e96700609f"
+#define CLIENT_ID "a1ja2NU3asy.testV1|securemode=2,signmethod=hmacsha256,timestamp=1706622122594|"
+#define MQTT_PASSWD "f34a483dc2845856494551f912cf1afd89f69efe1de13af582603c56dec76e01"
 
-//宏定义订阅主题                   // 修改产品名
+// 宏定义订阅主题                   // 修改产品名
 #define ALINK_BODY_FORMAT "{\"id\":\"testV1\",\"version\":\"1.0\",\"method\":\"thing.event.property.post\",\"params\":%s}"
 #define ALINK_TOPIC_PROP_POST "/sys/" PRODUCT_KEY "/" DEVICE_NAME "/thing/event/property/post"
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-//连接wifi
+// 连接wifi
 void wifiInit()
 {
     WiFi.begin(WIFI_SSID, WIFI_PASSWD);
@@ -48,7 +49,7 @@ void wifiInit()
     }
 }
 
-// 检查 mqtt连接
+// 检查 mqtt连接 若没连接则连接
 void mqttCheckConnect()
 {
     while (!client.connected())
@@ -67,18 +68,18 @@ void mqttCheckConnect()
     }
 }
 
-//上传温湿度、二氧化碳浓度
+// 上传温湿度、二氧化碳浓度
 void mqttIntervalPost()
 {
     char param[32];
     char jsonBuf[128];
 
     // upload humidity
-    // hum = DHT.getHumidity(); // 获取湿度
+    hum = DHT.getHumidity(); // 获取湿度
     sprintf(param, "{\"humidity\":%2f}", hum);
     sprintf(jsonBuf, ALINK_BODY_FORMAT, param);
     Serial.println(jsonBuf);
-    boolean b = client.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+    boolean b = client.publish(ALINK_TOPIC_PROP_POST, jsonBuf);     // 使用client发布一个消息到ALINK_TOPIC_PROP_POST主题，消息内容为jsonBuf，并将返回值存储在变量b中
     if (b)
     {
         Serial.println("publish Humidity success");
@@ -89,11 +90,41 @@ void mqttIntervalPost()
     }
 
     // Upload temperature
-    // tep = DHT.getTemperature(); // 获取温度
+    tep = DHT.getTemperature(); // 获取温度
     sprintf(param, "{\"temperature\":%2f}", tep);
     sprintf(jsonBuf, ALINK_BODY_FORMAT, param);
     Serial.println(jsonBuf);
     boolean c = client.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+    if (c)
+    {
+        Serial.println("publish Temperature success");
+    }
+    else
+    {
+        Serial.println("publish Temperature fail");
+    }
+
+    // Upload TVOC
+    TVOC = sgp.TVOC; //    TVOC
+    sprintf(param, "{\"TVOC\":%2f}", TVOC);
+    sprintf(jsonBuf, ALINK_BODY_FORMAT, param);
+    Serial.println(jsonBuf);
+    boolean d = client.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
+    if (b)
+    {
+        Serial.println("publish Humidity success");
+    }
+    else
+    {
+        Serial.println("publish Humidity fail");
+    }
+
+    // Upload CO2
+    CO2 = sgp.eCO2; // 获取CO2
+    sprintf(param, "{\"CO2\":%2f}", CO2);
+    sprintf(jsonBuf, ALINK_BODY_FORMAT, param);
+    Serial.println(jsonBuf);
+    boolean e = client.publish(ALINK_TOPIC_PROP_POST, jsonBuf);
     if (c)
     {
         Serial.println("publish Temperature success");
@@ -112,17 +143,28 @@ void dht20_init()
     delay(1000);
 }
 
+void SGP30_init()
+{
+    Wire1.begin(13, 14); // SDA SCL
+    if (!sgp.begin(&Wire1))
+    {
+        Serial.println("Sensor not found ");
+        while (1)
+            ;
+    }
+}
+
 void time_init()
 {
     struct tm timeinfo; // 定义时间信息
-    //如果获取失败，就开启联网模式，获取时间
+    // 如果获取失败，就开启联网模式，获取时间
     if (!getLocalTime(&timeinfo))
     {
         Serial.println("获取时间失败");
-        //开启网络
-        // wifi_init();
-        // 从网络时间服务器上获取并设置时间
-        configTime(8 * 3600, 0, NTP); //时区，夏令时，NTP地址
+        // 开启网络
+        //  wifi_init();
+        //  从网络时间服务器上获取并设置时间
+        configTime(8 * 3600, 0, NTP); // 时区，夏令时，NTP地址
         return;
     }
     // 格式化输出:2021-10-24 23:00:44 Sunday
@@ -162,7 +204,8 @@ void Tem_Hum_task(void *param)
     Serial.begin(115200);
     wifiInit();
     dht20_init();                 // 初始温湿度传感器
-    configTime(8 * 3600, 0, NTP); //时区，夏令时，NTP地址
+    SGP30_init();                 // 初始SGP30
+    configTime(8 * 3600, 0, NTP); // 时区，夏令时，NTP地址
 
     vTaskDelay(500);
     client.setServer(MQTT_SERVER, MQTT_PORT); /* 连接MQTT服务器 */
@@ -172,8 +215,14 @@ void Tem_Hum_task(void *param)
     {
         time_init();
 
-        // 从传感器读取数据 并返回状态
+        // 从传感器读取温湿度数据 并返回状态
         int status = DHT.read(); // 不能注释掉
+        // 刷新SGP30
+        if (!sgp.IAQmeasure())
+        {
+            Serial.println("Measurement failed");
+            return;
+        }
 
         // 每2s 读取一次数据
         if (millis() - lastMs >= 2000)
@@ -193,9 +242,21 @@ void Tem_Hum_task(void *param)
             lv_label_set_text(ui_Label2, "");   // 清空文本输入框
             lv_label_set_text(ui_Label2, Temp); // 输入温度数据
 
-            mqttCheckConnect();
-            
-            mqttIntervalPost(); // 上报 
+            TVOC = sgp.TVOC; //    TVOC
+            CO2 = sgp.eCO2;  // 获取CO2
+            char Tvoc[10];
+            char Co2[10];
+            sprintf(Tvoc, "%0.1f C", TVOC);
+            sprintf(Co2, "%0.1f C", CO2);
+
+            lv_label_set_text(ui_Label3, "");   // 清空文本输入框
+            lv_label_set_text(ui_Label3, Tvoc); // 输入湿度数据
+            lv_label_set_text(ui_Label4, "");   // 清空文本输入框
+            lv_label_set_text(ui_Label4, Co2);  // 输入温度数据
+
+            mqttCheckConnect(); // 检查MQTT 是否连接成功
+
+            mqttIntervalPost(); // 上报阿里云
         }
         client.loop();
         // vTaskDelay(2000);

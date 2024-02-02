@@ -19,20 +19,28 @@ extern "C" {
 // SCREEN: ui_Screen1
 void ui_Screen1_screen_init(void);
 extern lv_obj_t * ui_Screen1;
-extern lv_obj_t * ui_Sensor_Panel3;
-extern lv_obj_t * ui_Image3;
-extern lv_obj_t * ui_Label2;
-extern lv_obj_t * ui_Sensor_Panel1;
-extern lv_obj_t * ui_Image2;
-extern lv_obj_t * ui_Label1;
 extern lv_obj_t * ui_Panel1;
 extern lv_obj_t * ui_hour;
 extern lv_obj_t * ui_min;
 extern lv_obj_t * ui_sec;
+extern lv_obj_t * ui_Sensor_Panel1;
+extern lv_obj_t * ui_Image2;
+extern lv_obj_t * ui_Label1;
+extern lv_obj_t * ui_Sensor_Panel2;
+extern lv_obj_t * ui_Image4;
+extern lv_obj_t * ui_Label3;
+extern lv_obj_t * ui_Sensor_Panel3;
+extern lv_obj_t * ui_Image3;
+extern lv_obj_t * ui_Label2;
+extern lv_obj_t * ui_Sensor_Panel5;
+extern lv_obj_t * ui_Image5;
+extern lv_obj_t * ui_Label4;
 extern lv_obj_t * ui____initial_actions0;
 
-LV_IMG_DECLARE(ui_img_394011210);    // assets\温度传感器 (1).png
 LV_IMG_DECLARE(ui_img_547817801);    // assets\湿度.png
+LV_IMG_DECLARE(ui_img_tvoc_png);    // assets\TVOC.png
+LV_IMG_DECLARE(ui_img_394011210);    // assets\温度传感器 (1).png
+LV_IMG_DECLARE(ui_img_1551580766);    // assets\二氧化碳.png
 LV_IMG_DECLARE(ui_img_128x130_png);    // assets\128x130.png
 LV_IMG_DECLARE(ui_img_arrow_right_16x16_png);    // assets\arrow_right_16X16.png
 LV_IMG_DECLARE(ui_img_bg300_png);    // assets\bg300.png

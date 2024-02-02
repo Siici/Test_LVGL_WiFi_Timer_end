@@ -9,8 +9,10 @@ ui.c
 components/ui_comp_hook.c
 ui_helpers.c
 ui_events.c
-images/ui_img_394011210.c
 images/ui_img_547817801.c
+images/ui_img_tvoc_png.c
+images/ui_img_394011210.c
+images/ui_img_1551580766.c
 images/ui_img_128x130_png.c
 images/ui_img_arrow_right_16x16_png.c
 images/ui_img_bg300_png.c

@@ -1,6 +1,7 @@
 #pragma once
 #include "allhead.h"
 #include "DHT20.h"
+#include "Adafruit_SGP30.h"
 #include <WiFi.h>
 #include "PubSubClient.h"
 
